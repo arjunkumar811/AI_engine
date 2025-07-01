@@ -10,9 +10,9 @@ async function main() {
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 1000,
         temperature: 1,
-        message: [{
+        messages: [{
             role: "user", 
-            constent: "What is API"
+            content: "What is API"
         }]
     });
     console.log(msg)
