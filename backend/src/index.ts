@@ -2,6 +2,7 @@ require("dotenv").config();
 
 
 import Anthropic from "@anthropic-ai/sdk";
+import { getSystemPrompt } from "./prompts";
 
 const anthropic = new Anthropic();
 
@@ -10,7 +11,7 @@ async function main() {
     messages: [{role: 'user', content: "Hello, i'am Arjun"}],
     model: 'claude-opus-4-20250514',
     max_tokens: 1024,
-    system:
+    system: getSystemPrompt()
 }).on('text', (text) => {
     console.log(text);
 });
