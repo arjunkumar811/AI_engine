@@ -1,6 +1,6 @@
 require("dotenv").config();
 import express from 'express';
-
+import cors from "cors"
 
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -12,6 +12,7 @@ import {basePrompt as reactBasePrompt} from "./defaults/react";
 const anthropic = new Anthropic();
 const app = express()
 app.use(express.json())
+app.use(cors());
 
 
 
