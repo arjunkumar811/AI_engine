@@ -12,8 +12,10 @@
   "dependencies": {
     "@types/xml2js": "^0.4.14",
     "axios": "^1.10.0",
+    "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.3",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
