@@ -50,6 +50,21 @@ app.post("/template", async (req, res) => {
 
 })
 
+
+app.post("/chat", async (req, res) => {
+    const messages = req.body.messages
+    const response = await anthropic.messages.create({
+        messages: messages,
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 200,
+        system: getSystemPrompt()
+    })
+
+
+})
+
+
+
 app.listen(3000);
 
 // async function main() {
