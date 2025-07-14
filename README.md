@@ -15,6 +15,7 @@ An intelligent, AI-powered website builder that transforms natural language desc
 ## 🏗️ Architecture
 
 ### Frontend (React + TypeScript + Vite)
+
 - **React 19** with TypeScript for type-safe development
 - **Tailwind CSS** for beautiful, responsive styling
 - **Monaco Editor** for professional code editing experience
@@ -23,6 +24,7 @@ An intelligent, AI-powered website builder that transforms natural language desc
 - **Lucide React** for modern iconography
 
 ### Backend (Node.js + Express)
+
 - **Express.js** API server with TypeScript
 - **Anthropic Claude AI** integration for intelligent code generation
 - **CORS** enabled for cross-origin requests
@@ -33,6 +35,7 @@ An intelligent, AI-powered website builder that transforms natural language desc
 ### Prerequisites
 
 Before you begin, ensure you have the following installed:
+
 - **Node.js** (v18 or higher)
 - **npm** or **yarn**
 - **Anthropic API Key** ([Get one here](https://console.anthropic.com/))
@@ -40,12 +43,14 @@ Before you begin, ensure you have the following installed:
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/arjunkumar811/AI_engine.git
    cd AI_engine
    ```
 
 2. **Set up the Backend**
+
    ```bash
    cd backend
    npm install
@@ -53,11 +58,13 @@ Before you begin, ensure you have the following installed:
 
 3. **Configure Environment Variables**
    Create a `.env` file in the backend directory:
+
    ```env
    ANTHROPIC_API_KEY=your_anthropic_api_key_here
    ```
 
 4. **Set up the Frontend**
+
    ```bash
    cd ../frontend
    npm install
@@ -71,17 +78,21 @@ Before you begin, ensure you have the following installed:
 ### Running the Application
 
 1. **Start the Backend Server**
+
    ```bash
    cd backend
    npm run dev
    ```
+
    The backend will run on `http://localhost:3000`
 
 2. **Start the Frontend Development Server**
+
    ```bash
    cd frontend
    npm run dev
    ```
+
    The frontend will run on `http://localhost:5173` (or the next available port)
 
 3. **Open your browser** and navigate to the frontend URL to start building!
@@ -89,7 +100,8 @@ Before you begin, ensure you have the following installed:
 ## 🎯 How to Use
 
 1. **Describe Your Vision**: Enter a detailed description of the website you want to create
-   - Example: *"Create a modern portfolio website with a hero section, about me, skills showcase, and contact form"*
+
+   - Example: _"Create a modern portfolio website with a hero section, about me, skills showcase, and contact form"_
 
 2. **AI Analysis**: The system analyzes your request and determines the best project type (React or Node.js)
 
@@ -103,17 +115,17 @@ Before you begin, ensure you have the following installed:
 
 ## 🛠️ Technology Stack
 
-| Technology | Purpose | Version |
-|------------|---------|---------|
-| **React** | Frontend Framework | 19.x |
-| **TypeScript** | Type Safety | 5.x |
-| **Vite** | Build Tool | 6.x |
-| **Tailwind CSS** | Styling | 3.x |
-| **Monaco Editor** | Code Editor | 4.x |
-| **WebContainer** | Browser Runtime | 1.x |
-| **Node.js** | Backend Runtime | 18+ |
-| **Express** | Web Framework | 5.x |
-| **Anthropic Claude** | AI Model | 3.5 Sonnet |
+| Technology           | Purpose            | Version    |
+| -------------------- | ------------------ | ---------- |
+| **React**            | Frontend Framework | 19.x       |
+| **TypeScript**       | Type Safety        | 5.x        |
+| **Vite**             | Build Tool         | 6.x        |
+| **Tailwind CSS**     | Styling            | 3.x        |
+| **Monaco Editor**    | Code Editor        | 4.x        |
+| **WebContainer**     | Browser Runtime    | 1.x        |
+| **Node.js**          | Backend Runtime    | 18+        |
+| **Express**          | Web Framework      | 5.x        |
+| **Anthropic Claude** | AI Model           | 3.5 Sonnet |
 
 ## 📂 Project Structure
 
@@ -147,6 +159,7 @@ AI-Engine/
 ### Frontend Deployment
 
 #### Vercel (Recommended)
+
 ```bash
 cd frontend
 npm run build
@@ -154,6 +167,7 @@ npm run build
 ```
 
 #### Netlify
+
 ```bash
 cd frontend
 npm run build
@@ -163,11 +177,13 @@ npm run build
 ### Backend Deployment
 
 #### Railway
+
 1. Connect your GitHub repository to Railway
 2. Set environment variables in Railway dashboard
 3. Deploy automatically on push
 
 #### Render
+
 1. Connect repository to Render
 2. Configure environment variables
 3. Set build command: `npm install && npm run build`
@@ -177,9 +193,9 @@ npm run build
 
 ### Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key for Claude access | ✅ |
+| Variable            | Description                              | Required |
+| ------------------- | ---------------------------------------- | -------- |
+| `ANTHROPIC_API_KEY` | Your Anthropic API key for Claude access | ✅       |
 
 ### Customization
 
@@ -220,4 +236,4 @@ If you encounter any issues or have questions:
 
 **Built with ❤️ by [Arjun Kumar](https://github.com/arjunkumar811)**
 
-*Transform your ideas into reality with the power of AI* 🚀
+_Transform your ideas into reality with the power of AI_ 🚀
