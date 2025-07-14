@@ -236,53 +236,89 @@ export function Builder() {
                   <br />
                   {(loading || !templateSet) && <Loader />}
                   {!(loading || !templateSet) && (
-                    <div className="flex">
-                      <textarea
-                        value={userPrompt}
-                        onChange={(e) => {
-                          setPrompt(e.target.value);
-                        }}
-                        className="p-2 w-full"
-                      ></textarea>
-                      <button
-                        onClick={async () => {
-                          const newMessage = {
-                            role: "user" as "user",
-                            content: userPrompt,
-                          };
+                    <div className="w-full bg-gray-800 rounded-lg p-4 border border-gray-700">
+                      <h3 className="text-lg font-semibold text-gray-100 mb-3">
+                        Continue Building
+                      </h3>
+                      <div className="space-y-3">
+                        <textarea
+                          value={userPrompt}
+                          onChange={(e) => {
+                            setPrompt(e.target.value);
+                          }}
+                          placeholder="Ask for modifications, add features, or refine your project..."
+                          className="w-full p-3 bg-gray-900 text-gray-100 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none placeholder-gray-400"
+                          rows={3}
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            onClick={async () => {
+                              if (!userPrompt.trim()) return;
 
-                          setLoading(true);
-                          const stepsResponse = await axios.post(
-                            `${BACKEND_URL}/chat`,
-                            {
-                              messages: [...llmMessages, newMessage],
-                            }
-                          );
-                          setLoading(false);
+                              const newMessage = {
+                                role: "user" as const,
+                                content: userPrompt,
+                              };
 
-                          setLlmMessages((x) => [...x, newMessage]);
-                          setLlmMessages((x) => [
-                            ...x,
-                            {
-                              role: "assistant",
-                              content: stepsResponse.data.response,
-                            },
-                          ]);
+                              setLoading(true);
+                              const stepsResponse = await axios.post(
+                                `${BACKEND_URL}/chat`,
+                                {
+                                  messages: [...llmMessages, newMessage],
+                                }
+                              );
+                              setLoading(false);
 
-                          setSteps((s) => [
-                            ...s,
-                            ...parseXml(stepsResponse.data.response).map(
-                              (x) => ({
+                              setLlmMessages((x) => [...x, newMessage]);
+                              setLlmMessages((x) => [
                                 ...x,
-                                status: "pending" as "pending",
-                              })
-                            ),
-                          ]);
-                        }}
-                        className="bg-purple-400 px-4"
-                      >
-                        Send
-                      </button>
+                                {
+                                  role: "assistant",
+                                  content: stepsResponse.data.response,
+                                },
+                              ]);
+
+                              setSteps((s) => [
+                                ...s,
+                                ...parseXml(stepsResponse.data.response).map(
+                                  (x) => ({
+                                    ...x,
+                                    status: "pending" as const,
+                                  })
+                                ),
+                              ]);
+
+                              setPrompt(""); // Clear the input after sending
+                            }}
+                            disabled={!userPrompt.trim() || loading}
+                            className="group relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-medium rounded-lg shadow-lg hover:from-purple-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-purple-500 disabled:hover:to-purple-600"
+                          >
+                            {loading ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                <span>Generating...</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                  />
+                                </svg>
+                                <span>Send Message</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
