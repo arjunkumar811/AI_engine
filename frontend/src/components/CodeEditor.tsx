@@ -1,6 +1,6 @@
-import React from 'react';
-import Editor from '@monaco-editor/react';
-import type { FileItem } from '../types/index';
+import React from "react";
+import Editor from "@monaco-editor/react";
+import type { FileItem } from "../types/index";
 
 interface CodeEditorProps {
   file: FileItem | null;
@@ -20,12 +20,12 @@ export function CodeEditor({ file }: CodeEditorProps) {
       height="100%"
       defaultLanguage="typescript"
       theme="vs-dark"
-      value={file.content || ''}
+      value={file.content || ""}
       options={{
         readOnly: true,
         minimap: { enabled: false },
         fontSize: 14,
-        wordWrap: 'on',
+        wordWrap: "on",
         scrollBeyondLastLine: false,
       }}
     />
