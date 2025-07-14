@@ -62,7 +62,12 @@ app.post("/chat", async (req, res) => {
     
     console.log(response);
 
-    res.json({});
+    // Extract the text content from the response
+    const content = response.content[0] as TextBlock;
+    
+    res.json({
+        response: content.text
+    });
 
 })
 
