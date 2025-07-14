@@ -32,7 +32,17 @@ export function Builder() {
   >([]);
   const [loading, setLoading] = useState(false);
   const [templateSet, setTemplateSet] = useState(false);
-  const { webcontainer } = useWebContainer();
+  const {
+    webcontainer,
+    isLoading: webContainerLoading,
+    error: webContainerError,
+  } = useWebContainer();
+
+  console.log("Builder - WebContainer state:", {
+    webcontainer,
+    webContainerLoading,
+    webContainerError,
+  });
 
   const [currentStep, setCurrentStep] = useState(1);
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
@@ -110,7 +120,8 @@ export function Builder() {
         })
       );
     }
-    console.log(files);
+    console.log("Builder - Updated files:", originalFiles);
+    console.log("Builder - Files length:", originalFiles.length);
   }, [steps, files]);
 
   useEffect(() => {
