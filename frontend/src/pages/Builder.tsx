@@ -32,7 +32,7 @@ export function Builder() {
   >([]);
   const [loading, setLoading] = useState(false);
   const [templateSet, setTemplateSet] = useState(false);
-  const webcontainer = useWebContainer();
+  const { webcontainer } = useWebContainer();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
@@ -114,104 +114,54 @@ export function Builder() {
   }, [steps, files]);
 
   useEffect(() => {
-    const createMountStructure = (files: FileItem[]): Record<string, any> => {
-      const mountStructure: Record<string, any> = {};
+    async function init() {
+      const response = await axios.post(`${BACKEND_URL}/template`, {
+        prompt: prompt.trim(),
+      });
+      setTemplateSet(true);
 
-      const processFile = (file: FileItem, isRootFolder: boolean) => {
-        if (file.type === "folder") {
-          // For folders, create a directory entry
-          mountStructure[file.name] = {
-            directory: file.children
-              ? Object.fromEntries(
-                  file.children.map((child) => [
-                    child.name,
-                    processFile(child, false),
-                  ])
-                )
-              : {},
-          };
-        } else if (file.type === "file") {
-          if (isRootFolder) {
-            mountStructure[file.name] = {
-              file: {
-                contents: file.content || "",
-              },
-            };
-          } else {
-            // For files, create a file entry with contents
-            return {
-              file: {
-                contents: file.content || "",
-              },
-            };
-          }
-        }
+      const { prompts, uiPrompts } = response.data;
 
-        return mountStructure[file.name];
-      };
+      setSteps(
+        parseXml(uiPrompts[0]).map((x: Step) => ({
+          ...x,
+          status: "pending",
+        }))
+      );
 
-      // Process each top-level file/folder
-      files.forEach((file) => processFile(file, true));
+      setLoading(true);
+      const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
+        messages: [...prompts, prompt].map((content) => ({
+          role: "user",
+          content,
+        })),
+      });
 
-      return mountStructure;
-    };
+      setLoading(false);
 
-    const mountStructure = createMountStructure(files);
+      setSteps((s) => [
+        ...s,
+        ...parseXml(stepsResponse.data.response).map((x) => ({
+          ...x,
+          status: "pending" as const,
+        })),
+      ]);
 
-    // Mount the structure if WebContainer is available
-    console.log(mountStructure);
-    webcontainer?.mount(mountStructure);
-  }, [files, webcontainer]);
+      setLlmMessages(
+        [...prompts, prompt].map((content) => ({
+          role: "user",
+          content,
+        }))
+      );
 
-  async function init() {
-    const response = await axios.post(`${BACKEND_URL}/template`, {
-      prompt: prompt.trim(),
-    });
-    setTemplateSet(true);
-
-    const { prompts, uiPrompts } = response.data;
-
-    setSteps(
-      parseXml(uiPrompts[0]).map((x: Step) => ({
+      setLlmMessages((x) => [
         ...x,
-        status: "pending",
-      }))
-    );
+        { role: "assistant", content: stepsResponse.data.response },
+      ]);
+    }
 
-    setLoading(true);
-    const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
-      messages: [...prompts, prompt].map((content) => ({
-        role: "user",
-        content,
-      })),
-    });
-
-    setLoading(false);
-
-    setSteps((s) => [
-      ...s,
-      ...parseXml(stepsResponse.data.response).map((x) => ({
-        ...x,
-        status: "pending" as "pending",
-      })),
-    ]);
-
-    setLlmMessages(
-      [...prompts, prompt].map((content) => ({
-        role: "user",
-        content,
-      }))
-    );
-
-    setLlmMessages((x) => [
-      ...x,
-      { role: "assistant", content: stepsResponse.data.response },
-    ]);
-  }
-
-  useEffect(() => {
     init();
-  }, []);
+  }, [prompt]);
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
@@ -334,7 +284,10 @@ export function Builder() {
               {activeTab === "code" ? (
                 <CodeEditor file={selectedFile} />
               ) : (
-                <PreviewFrame webContainer={webcontainer} files={files} />
+                <PreviewFrame
+                  webContainer={webcontainer || null}
+                  files={files}
+                />
               )}
             </div>
           </div>
