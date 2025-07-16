@@ -32,17 +32,7 @@ export function Builder() {
   >([]);
   const [loading, setLoading] = useState(false);
   const [templateSet, setTemplateSet] = useState(false);
-  const {
-    webcontainer,
-    isLoading: webContainerLoading,
-    error: webContainerError,
-  } = useWebContainer();
-
-  console.log("Builder - WebContainer state:", {
-    webcontainer,
-    webContainerLoading,
-    webContainerError,
-  });
+  const webcontainer = useWebContainer();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
@@ -120,59 +110,108 @@ export function Builder() {
         })
       );
     }
-    console.log("Builder - Updated files:", originalFiles);
-    console.log("Builder - Files length:", originalFiles.length);
+    console.log(files);
   }, [steps, files]);
 
   useEffect(() => {
-    async function init() {
-      const response = await axios.post(`${BACKEND_URL}/template`, {
-        prompt: prompt.trim(),
-      });
-      setTemplateSet(true);
+    const createMountStructure = (files: FileItem[]): Record<string, any> => {
+      const mountStructure: Record<string, any> = {};
 
-      const { prompts, uiPrompts } = response.data;
+      const processFile = (file: FileItem, isRootFolder: boolean) => {
+        if (file.type === "folder") {
+          // For folders, create a directory entry
+          mountStructure[file.name] = {
+            directory: file.children
+              ? Object.fromEntries(
+                  file.children.map((child) => [
+                    child.name,
+                    processFile(child, false),
+                  ])
+                )
+              : {},
+          };
+        } else if (file.type === "file") {
+          if (isRootFolder) {
+            mountStructure[file.name] = {
+              file: {
+                contents: file.content || "",
+              },
+            };
+          } else {
+            // For files, create a file entry with contents
+            return {
+              file: {
+                contents: file.content || "",
+              },
+            };
+          }
+        }
 
-      setSteps(
-        parseXml(uiPrompts[0]).map((x: Step) => ({
-          ...x,
-          status: "pending",
-        }))
-      );
+        return mountStructure[file.name];
+      };
 
-      setLoading(true);
-      const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
-        messages: [...prompts, prompt].map((content) => ({
-          role: "user",
-          content,
-        })),
-      });
+      // Process each top-level file/folder
+      files.forEach((file) => processFile(file, true));
 
-      setLoading(false);
+      return mountStructure;
+    };
 
-      setSteps((s) => [
-        ...s,
-        ...parseXml(stepsResponse.data.response).map((x) => ({
-          ...x,
-          status: "pending" as const,
-        })),
-      ]);
+    const mountStructure = createMountStructure(files);
 
-      setLlmMessages(
-        [...prompts, prompt].map((content) => ({
-          role: "user",
-          content,
-        }))
-      );
+    // Mount the structure if WebContainer is available
+    console.log(mountStructure);
+    webcontainer?.mount(mountStructure);
+  }, [files, webcontainer]);
 
-      setLlmMessages((x) => [
+  async function init() {
+    const response = await axios.post(`${BACKEND_URL}/template`, {
+      prompt: prompt.trim(),
+    });
+    setTemplateSet(true);
+
+    const { prompts, uiPrompts } = response.data;
+
+    setSteps(
+      parseXml(uiPrompts[0]).map((x: Step) => ({
         ...x,
-        { role: "assistant", content: stepsResponse.data.response },
-      ]);
-    }
+        status: "pending",
+      }))
+    );
 
+    setLoading(true);
+    const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
+      messages: [...prompts, prompt].map((content) => ({
+        role: "user",
+        content,
+      })),
+    });
+
+    setLoading(false);
+
+    setSteps((s) => [
+      ...s,
+      ...parseXml(stepsResponse.data.response).map((x) => ({
+        ...x,
+        status: "pending" as "pending",
+      })),
+    ]);
+
+    setLlmMessages(
+      [...prompts, prompt].map((content) => ({
+        role: "user",
+        content,
+      }))
+    );
+
+    setLlmMessages((x) => [
+      ...x,
+      { role: "assistant", content: stepsResponse.data.response },
+    ]);
+  }
+
+  useEffect(() => {
     init();
-  }, [prompt]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
@@ -295,10 +334,7 @@ export function Builder() {
               {activeTab === "code" ? (
                 <CodeEditor file={selectedFile} />
               ) : (
-                <PreviewFrame
-                  webContainer={webcontainer || null}
-                  files={files}
-                />
+                <PreviewFrame webContainer={webcontainer} files={files} />
               )}
             </div>
           </div>
