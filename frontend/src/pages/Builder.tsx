@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { StepsList } from "../components/StepsList";
 import { FileExplorer } from "../components/FileExplorer";
-import { TabView } from "../components/TabView";
 import { CodeEditor } from "../components/CodeEditor";
 import { PreviewFrame } from "../components/PreviewFrame";
 import { StepType } from "../types/index";
@@ -198,7 +197,13 @@ export function Builder() {
               
               if (data.type === 'token') {
                 fullContent += data.content;
-                setStreamingContent(fullContent);
+                
+                const codeMatch = fullContent.match(/<boltAction[^>]*>([\s\S]*?)$/);
+                if (codeMatch) {
+                  setStreamingContent(codeMatch[1]);
+                } else {
+                  setStreamingContent(fullContent);
+                }
                 
                 try {
                   const parsedSteps = parseXml(fullContent);
@@ -287,128 +292,130 @@ export function Builder() {
   }, [prompt]);
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-        <h1 className="text-xl font-semibold text-gray-100">Website Builder</h1>
-        <p className="text-sm text-gray-400 mt-1">Prompt: {prompt}</p>
-      </header>
-
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full grid grid-cols-4 gap-6 p-6">
-          <div className="col-span-1 space-y-6 overflow-auto">
-            <div>
-              <div className="max-h-[75vh] overflow-scroll">
-                <StepsList
-                  steps={steps}
-                  currentStep={currentStep}
-                  onStepClick={setCurrentStep}
-                />
-                {streaming && (
-                  <div className="mt-4 p-4 bg-gray-800 border border-purple-500 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-500 border-t-transparent"></div>
-                      <span className="text-purple-400 font-medium">Generating...</span>
-                    </div>
-                    <div className="text-sm text-gray-300 whitespace-pre-wrap max-h-32 overflow-y-auto">
-                      {streamingContent}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="flex">
-                  <br />
-                  {(loading || !templateSet) && <Loader />}
-                  {!(loading || !templateSet) && (
-                    <div className="w-full bg-gray-800 rounded-lg p-4 border border-gray-700">
-                      <h3 className="text-lg font-semibold text-gray-100 mb-3">
-                        Continue Building
-                      </h3>
-                      <div className="space-y-3">
-                        <textarea
-                          value={userPrompt}
-                          onChange={(e) => {
-                            setPrompt(e.target.value);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                              e.preventDefault();
-                              if (!userPrompt.trim() || streaming) return;
-                              
-                              const newMessage = {
-                                role: "user" as const,
-                                content: userPrompt,
-                              };
-
-                              setLlmMessages((x) => [...x, newMessage]);
-                              setPrompt("");
-                              handleStreamResponse([...llmMessages, newMessage]);
-                            }
-                          }}
-                          placeholder="Ask for modifications, add features, or refine your project..."
-                          className="w-full p-3 bg-gray-900 text-gray-100 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none placeholder-gray-400"
-                          rows={3}
-                        />
-                        <div className="flex justify-end">
-                          <button
-                            onClick={async () => {
-                              if (!userPrompt.trim()) return;
-
-                              const newMessage = {
-                                role: "user" as const,
-                                content: userPrompt,
-                              };
-
-                              setLlmMessages((x) => [...x, newMessage]);
-                              setPrompt("");
-                              await handleStreamResponse([...llmMessages, newMessage]);
-                            }}
-                            disabled={!userPrompt.trim() || streaming}
-                            className="group relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-medium rounded-lg shadow-lg hover:from-purple-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-purple-500 disabled:hover:to-purple-600"
-                          >
-                            {streaming ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                <span>Generating...</span>
-                              </>
-                            ) : (
-                              <>
-                                <svg
-                                  className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                                  />
-                                </svg>
-                                <span>Send Message</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+    <div className="min-h-screen bg-gray-900 flex">
+      <div className="w-72 bg-gray-800 border-r border-gray-700 flex flex-col">
+        <div className="p-4 border-b border-gray-700">
+          <h2 className="text-lg font-semibold text-white">AI Website Builder</h2>
+          <p className="text-xs text-gray-400 mt-1 truncate">{prompt}</p>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4">
+            <h3 className="text-sm font-medium text-gray-300 mb-3">Project Steps</h3>
+            <div className="max-h-64 overflow-y-auto">
+              <StepsList
+                steps={steps}
+                currentStep={currentStep}
+                onStepClick={setCurrentStep}
+              />
             </div>
           </div>
-          <div className="col-span-1">
-            <FileExplorer files={files} onFileSelect={setSelectedFile} />
-          </div>
-          <div className="col-span-2 bg-gray-900 rounded-lg shadow-lg p-4 h-[calc(100vh-8rem)]">
-            <TabView activeTab={activeTab} onTabChange={setActiveTab} />
-            <div className="h-[calc(100%-4rem)]">
-              {activeTab === "code" ? (
-                <CodeEditor file={selectedFile} />
-              ) : (
-                <PreviewFrame webContainer={webcontainer || null} files={files} />
-              )}
+
+          {!(loading || !templateSet) && (
+            <div className="p-4 border-t border-gray-700">
+              <h3 className="text-sm font-medium text-gray-300 mb-3">Continue Building</h3>
+              <div className="space-y-3">
+                <textarea
+                  value={userPrompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
+                      if (!userPrompt.trim() || streaming) return;
+                      
+                      const newMessage = {
+                        role: "user" as const,
+                        content: userPrompt,
+                      };
+
+                      setLlmMessages((x) => [...x, newMessage]);
+                      setPrompt("");
+                      handleStreamResponse([...llmMessages, newMessage]);
+                    }
+                  }}
+                  placeholder="Describe what you want to add or modify..."
+                  className="w-full p-3 bg-gray-900 text-gray-100 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none placeholder-gray-400 text-sm"
+                  rows={3}
+                />
+                <button
+                  onClick={async () => {
+                    if (!userPrompt.trim()) return;
+
+                    const newMessage = {
+                      role: "user" as const,
+                      content: userPrompt,
+                    };
+
+                    setLlmMessages((x) => [...x, newMessage]);
+                    setPrompt("");
+                    await handleStreamResponse([...llmMessages, newMessage]);
+                  }}
+                  disabled={!userPrompt.trim() || streaming}
+                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+                >
+                  {streaming ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Code"
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {(loading || !templateSet) && (
+            <div className="p-4">
+              <Loader />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 flex">
+        <div className="w-80 bg-gray-800 border-r border-gray-700">
+          <FileExplorer files={files} onFileSelect={setSelectedFile} />
+        </div>
+        
+        <div className="flex-1 flex">
+          <div className="flex-1 bg-gray-900">
+            <div className="h-full flex flex-col">
+              <div className="flex bg-gray-800 border-b border-gray-700">
+                <button
+                  onClick={() => setActiveTab("code")}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === "code"
+                      ? "bg-gray-700 text-white border-b-2 border-blue-500"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Code Editor
+                </button>
+                <button
+                  onClick={() => setActiveTab("preview")}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === "preview"
+                      ? "bg-gray-700 text-white border-b-2 border-blue-500"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Preview
+                </button>
+              </div>
+              
+              <div className="flex-1">
+                {activeTab === "code" ? (
+                  <CodeEditor 
+                    file={selectedFile} 
+                    streaming={streaming}
+                    streamingContent={streamingContent}
+                  />
+                ) : (
+                  <PreviewFrame webContainer={webcontainer || null} files={files} />
+                )}
+              </div>
             </div>
           </div>
         </div>
