@@ -1,3 +1,6 @@
+<img width="1903" height="940" alt="image" src="https://github.com/user-attachments/assets/a3b3feac-6b53-4ac8-b8df-5110f3ef5c98" />
+
+
 # 🚀 AI Website Builder
 
 An intelligent, AI-powered website builder that transforms natural language descriptions into fully functional websites. Built with cutting-edge technologies including Claude AI, WebContainer, and modern React.
