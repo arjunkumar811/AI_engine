@@ -198,12 +198,7 @@ export function Builder() {
               if (data.type === 'token') {
                 fullContent += data.content;
                 
-                const codeMatch = fullContent.match(/<boltAction[^>]*>([\s\S]*?)$/);
-                if (codeMatch) {
-                  setStreamingContent(codeMatch[1]);
-                } else {
-                  setStreamingContent(fullContent);
-                }
+                setStreamingContent(fullContent);
                 
                 try {
                   const parsedSteps = parseXml(fullContent);
@@ -219,7 +214,7 @@ export function Builder() {
                       ];
                     });
                   }
-                } catch (e) {
+                } catch {
                   
                 }
               } else if (data.type === 'done') {
@@ -245,7 +240,7 @@ export function Builder() {
               } else if (data.type === 'error') {
                 throw new Error(data.error);
               }
-            } catch (e) {
+            } catch {
               
             }
           }

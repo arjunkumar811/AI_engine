@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Editor from "@monaco-editor/react";
 import type { FileItem } from "../types/index";
 
@@ -9,42 +9,78 @@ interface CodeEditorProps {
 }
 
 export function CodeEditor({ file, streaming, streamingContent }: CodeEditorProps) {
-  if (streaming && streamingContent) {
-    const extractCodeFromResponse = (content: string) => {
-      const codeBlockRegex = /```[\w]*\n([\s\S]*?)```/g;
-      const fileBlockRegex = /<boltArtifact[^>]*id="([^"]*)"[^>]*title="([^"]*)"[^>]*>\s*<boltAction[^>]*type="file"[^>]*filePath="([^"]*)"[^>]*>([\s\S]*?)<\/boltAction>\s*<\/boltArtifact>/g;
+  const [displayContent, setDisplayContent] = useState("");
+  const [currentFile, setCurrentFile] = useState<{
+    fileName: string;
+    filePath: string;
+    content: string;
+    language: string;
+  } | null>(null);
+
+  const getLanguageFromPath = (path: string) => {
+    const ext = path.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'ts': case 'tsx': return 'typescript';
+      case 'js': case 'jsx': return 'javascript';
+      case 'css': return 'css';
+      case 'html': return 'html';
+      case 'json': return 'json';
+      case 'md': return 'markdown';
+      case 'py': return 'python';
+      case 'java': return 'java';
+      case 'cpp': case 'c': return 'cpp';
+      default: return 'typescript';
+    }
+  };
+
+  const extractLatestFileContent = useMemo(() => {
+    if (!streamingContent) return null;
+
+    const fileBlocks = streamingContent.match(/<boltAction[^>]*type="file"[^>]*filePath="([^"]*)"[^>]*>([\s\S]*?)<\/boltAction>/g);
+    
+    if (fileBlocks && fileBlocks.length > 0) {
+      const lastBlock = fileBlocks[fileBlocks.length - 1];
+      const pathMatch = lastBlock.match(/filePath="([^"]*)"/);
+      const contentMatch = lastBlock.match(/<boltAction[^>]*>([\s\S]*?)<\/boltAction>/);
       
-      let match = fileBlockRegex.exec(content);
-      if (match) {
-        const [, id, title, filePath, fileContent] = match;
+      if (pathMatch && contentMatch) {
+        const filePath = pathMatch[1];
+        const content = contentMatch[1].trim();
+        
         return {
           fileName: filePath.split('/').pop() || 'Generated File',
           filePath,
-          content: fileContent.trim(),
+          content,
           language: getLanguageFromPath(filePath)
         };
       }
-      
-      match = codeBlockRegex.exec(content);
+    }
+
+    const codeBlocks = streamingContent.match(/```(\w+)?\n([\s\S]*?)```/g);
+    if (codeBlocks && codeBlocks.length > 0) {
+      const lastBlock = codeBlocks[codeBlocks.length - 1];
+      const match = lastBlock.match(/```(\w+)?\n([\s\S]*?)```/);
       if (match) {
         return {
           fileName: 'Generated Code',
           filePath: 'generated.tsx',
-          content: match[1],
-          language: 'typescript'
+          content: match[2],
+          language: match[1] || 'typescript'
         };
       }
-      
-      return {
-        fileName: 'Streaming...',
-        filePath: 'stream.txt',
-        content: content,
-        language: 'typescript'
-      };
-    };
+    }
 
-    const extractedCode = extractCodeFromResponse(streamingContent);
+    return null;
+  }, [streamingContent]);
 
+  useEffect(() => {
+    if (streaming && extractLatestFileContent) {
+      setCurrentFile(extractLatestFileContent);
+      setDisplayContent(extractLatestFileContent.content);
+    }
+  }, [streaming, extractLatestFileContent]);
+
+  if (streaming && currentFile) {
     return (
       <div className="h-full bg-[#1e1e1e] flex flex-col">
         <div className="bg-[#2d2d30] px-4 py-3 border-b border-gray-600 flex items-center justify-between">
@@ -55,7 +91,7 @@ export function CodeEditor({ file, streaming, streamingContent }: CodeEditorProp
             </div>
             <div>
               <span className="text-sm text-green-400 font-medium">
-                {extractedCode.fileName}
+                {currentFile.fileName}
               </span>
               <div className="text-xs text-gray-400">AI is building this for you...</div>
             </div>
@@ -74,9 +110,9 @@ export function CodeEditor({ file, streaming, streamingContent }: CodeEditorProp
         <div className="flex-1">
           <Editor
             height="100%"
-            language={extractedCode.language}
+            language={currentFile.language}
             theme="vs-dark"
-            value={extractedCode.content}
+            value={displayContent}
             options={{
               readOnly: true,
               minimap: { enabled: false },
@@ -126,22 +162,6 @@ export function CodeEditor({ file, streaming, streamingContent }: CodeEditorProp
       </div>
     );
   }
-
-  const getLanguageFromPath = (path: string) => {
-    const ext = path.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      case 'ts': case 'tsx': return 'typescript';
-      case 'js': case 'jsx': return 'javascript';
-      case 'css': return 'css';
-      case 'html': return 'html';
-      case 'json': return 'json';
-      case 'md': return 'markdown';
-      case 'py': return 'python';
-      case 'java': return 'java';
-      case 'cpp': case 'c': return 'cpp';
-      default: return 'typescript';
-    }
-  };
 
   return (
     <div className="h-full bg-[#1e1e1e] flex flex-col">
