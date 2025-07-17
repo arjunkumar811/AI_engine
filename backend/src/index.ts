@@ -57,22 +57,40 @@ app.post("/template", async (req, res) => {
 
 app.post("/chat", async (req, res) => {
   const messages = req.body.messages;
-  const response = await anthropic.messages.create({
-    messages: messages,
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 8000,
-    system: getSystemPrompt(),
-  });
+  
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
 
-  // Extract the text content from the response
-  const content = response.content[0] as TextBlock;
+  try {
+    const stream = await anthropic.messages.create({
+      messages: messages,
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 8000,
+      system: getSystemPrompt(),
+      stream: true,
+    });
 
-  // Log only the content for debugging (optional)
-  console.log("AI Response:", content.text.substring(0, 200) + "...");
+    for await (const chunk of stream) {
+      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+        res.write(`data: ${JSON.stringify({ 
+          type: 'token', 
+          content: chunk.delta.text 
+        })}\n\n`);
+      }
+    }
 
-  res.json({
-    response: content.text,
-  });
+    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+    res.end();
+  } catch (error: any) {
+    res.write(`data: ${JSON.stringify({ 
+      type: 'error', 
+      error: error?.message || 'Unknown error'
+    })}\n\n`);
+    res.end();
+  }
 });
 
 app.listen(3000);

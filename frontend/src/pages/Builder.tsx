@@ -31,6 +31,8 @@ export function Builder() {
     { role: "user" | "assistant"; content: string }[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [streaming, setStreaming] = useState(false);
+  const [streamingContent, setStreamingContent] = useState("");
   const [templateSet, setTemplateSet] = useState(false);
   const webcontainer = useWebContainer();
 
@@ -163,6 +165,94 @@ export function Builder() {
     webcontainer?.mount(mountStructure);
   }, [files, webcontainer]);
 
+  const handleStreamResponse = async (messages: any[]) => {
+    setStreaming(true);
+    setStreamingContent("");
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages }),
+      });
+
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === 'token') {
+                fullContent += data.content;
+                setStreamingContent(fullContent);
+                
+                try {
+                  const parsedSteps = parseXml(fullContent);
+                  if (parsedSteps.length > 0) {
+                    setSteps((prev) => {
+                      const existingCompleted = prev.filter(s => s.status === "completed");
+                      return [
+                        ...existingCompleted,
+                        ...parsedSteps.map((x: Step) => ({
+                          ...x,
+                          status: "pending" as const,
+                        })),
+                      ];
+                    });
+                  }
+                } catch (e) {
+                  
+                }
+              } else if (data.type === 'done') {
+                setStreaming(false);
+                setStreamingContent("");
+                setLlmMessages((x) => [
+                  ...x,
+                  { role: "assistant", content: fullContent },
+                ]);
+                
+                const finalSteps = parseXml(fullContent);
+                setSteps((prev) => {
+                  const existingCompleted = prev.filter(s => s.status === "completed");
+                  return [
+                    ...existingCompleted,
+                    ...finalSteps.map((x: Step) => ({
+                      ...x,
+                      status: "pending" as const,
+                    })),
+                  ];
+                });
+                break;
+              } else if (data.type === 'error') {
+                throw new Error(data.error);
+              }
+            } catch (e) {
+              
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Streaming error:', error);
+      setStreaming(false);
+      setStreamingContent("");
+    }
+  };
+
   async function init() {
     const response = await axios.post(`${BACKEND_URL}/template`, {
       prompt: prompt.trim(),
@@ -179,39 +269,22 @@ export function Builder() {
     );
 
     setLoading(true);
-    const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
-      messages: [...prompts, prompt].map((content) => ({
-        role: "user",
-        content,
-      })),
-    });
+    const messages = [...prompts, prompt].map((content) => ({
+      role: "user" as const,
+      content,
+    }));
 
+    setLlmMessages(messages);
+    await handleStreamResponse(messages);
     setLoading(false);
-
-    setSteps((s) => [
-      ...s,
-      ...parseXml(stepsResponse.data.response).map((x) => ({
-        ...x,
-        status: "pending" as "pending",
-      })),
-    ]);
-
-    setLlmMessages(
-      [...prompts, prompt].map((content) => ({
-        role: "user",
-        content,
-      }))
-    );
-
-    setLlmMessages((x) => [
-      ...x,
-      { role: "assistant", content: stepsResponse.data.response },
-    ]);
   }
 
   useEffect(() => {
-    init();
-  }, []);
+    async function initTemplate() {
+      await init();
+    }
+    initTemplate();
+  }, [prompt]);
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
@@ -230,6 +303,17 @@ export function Builder() {
                   currentStep={currentStep}
                   onStepClick={setCurrentStep}
                 />
+                {streaming && (
+                  <div className="mt-4 p-4 bg-gray-800 border border-purple-500 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-500 border-t-transparent"></div>
+                      <span className="text-purple-400 font-medium">Generating...</span>
+                    </div>
+                    <div className="text-sm text-gray-300 whitespace-pre-wrap max-h-32 overflow-y-auto">
+                      {streamingContent}
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <div className="flex">
@@ -246,6 +330,21 @@ export function Builder() {
                           onChange={(e) => {
                             setPrompt(e.target.value);
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                              e.preventDefault();
+                              if (!userPrompt.trim() || streaming) return;
+                              
+                              const newMessage = {
+                                role: "user" as const,
+                                content: userPrompt,
+                              };
+
+                              setLlmMessages((x) => [...x, newMessage]);
+                              setPrompt("");
+                              handleStreamResponse([...llmMessages, newMessage]);
+                            }
+                          }}
                           placeholder="Ask for modifications, add features, or refine your project..."
                           className="w-full p-3 bg-gray-900 text-gray-100 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none placeholder-gray-400"
                           rows={3}
@@ -260,40 +359,14 @@ export function Builder() {
                                 content: userPrompt,
                               };
 
-                              setLoading(true);
-                              const stepsResponse = await axios.post(
-                                `${BACKEND_URL}/chat`,
-                                {
-                                  messages: [...llmMessages, newMessage],
-                                }
-                              );
-                              setLoading(false);
-
                               setLlmMessages((x) => [...x, newMessage]);
-                              setLlmMessages((x) => [
-                                ...x,
-                                {
-                                  role: "assistant",
-                                  content: stepsResponse.data.response,
-                                },
-                              ]);
-
-                              setSteps((s) => [
-                                ...s,
-                                ...parseXml(stepsResponse.data.response).map(
-                                  (x) => ({
-                                    ...x,
-                                    status: "pending" as const,
-                                  })
-                                ),
-                              ]);
-
-                              setPrompt(""); // Clear the input after sending
+                              setPrompt("");
+                              await handleStreamResponse([...llmMessages, newMessage]);
                             }}
-                            disabled={!userPrompt.trim() || loading}
+                            disabled={!userPrompt.trim() || streaming}
                             className="group relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-medium rounded-lg shadow-lg hover:from-purple-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-purple-500 disabled:hover:to-purple-600"
                           >
-                            {loading ? (
+                            {streaming ? (
                               <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                                 <span>Generating...</span>
@@ -334,7 +407,7 @@ export function Builder() {
               {activeTab === "code" ? (
                 <CodeEditor file={selectedFile} />
               ) : (
-                <PreviewFrame webContainer={webcontainer} files={files} />
+                <PreviewFrame webContainer={webcontainer || null} files={files} />
               )}
             </div>
           </div>
