@@ -73,11 +73,6 @@ Before you begin, ensure you have the following installed:
    npm install
    ```
 
-5. **Install Tailwind CSS Dependencies** (if not already installed)
-   ```bash
-   npm install -D @tailwindcss/postcss autoprefixer
-   ```
-
 ### Running the Application
 
 1. **Start the Backend Server**
