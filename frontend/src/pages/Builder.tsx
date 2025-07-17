@@ -295,34 +295,98 @@ export function Builder() {
     <div className="min-h-screen bg-gray-900 flex">
       <div className="w-72 bg-gray-800 border-r border-gray-700 flex flex-col">
         <div className="p-4 border-b border-gray-700">
-          <h2 className="text-lg font-semibold text-white">AI Website Builder</h2>
-          <p className="text-xs text-gray-400 mt-1 truncate">{prompt}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">AI</span>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Website Builder</h2>
+              <p className="text-xs text-blue-400">I'll help you build amazing websites</p>
+            </div>
+          </div>
+          <div className="bg-gray-900 rounded-lg p-3 border border-gray-600">
+            <p className="text-xs text-gray-300 font-medium mb-1">Building:</p>
+            <p className="text-sm text-white truncate">{prompt}</p>
+          </div>
         </div>
         
         <div className="flex-1 overflow-y-auto">
-          <div className="p-4">
-            <h3 className="text-sm font-medium text-gray-300 mb-3">Project Steps</h3>
-            <div className="max-h-64 overflow-y-auto">
-              <StepsList
-                steps={steps}
-                currentStep={currentStep}
-                onStepClick={setCurrentStep}
-              />
+          {(loading || !templateSet) ? (
+            <div className="p-4">
+              <div className="bg-gradient-to-r from-blue-500/10 to-purple-600/10 rounded-lg p-4 border border-blue-500/20">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-blue-400 font-medium text-sm">Building your project...</span>
+                </div>
+                <p className="text-gray-300 text-xs mb-2">Let me set up everything for you:</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
+                    Analyzing your requirements
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                    Setting up project structure
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                    Generating initial code
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <h3 className="text-sm font-medium text-gray-300">Project Steps</h3>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  <StepsList
+                    steps={steps}
+                    currentStep={currentStep}
+                    onStepClick={setCurrentStep}
+                  />
+                </div>
+              </div>
 
-          {!(loading || !templateSet) && (
-            <div className="p-4 border-t border-gray-700">
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Continue Building</h3>
-              <div className="space-y-3">
-                <textarea
-                  value={userPrompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                      e.preventDefault();
-                      if (!userPrompt.trim() || streaming) return;
-                      
+              <div className="p-4 border-t border-gray-700">
+                <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg p-4 border border-purple-500/20 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-purple-400 text-lg">🚀</span>
+                    <h3 className="text-sm font-medium text-purple-300">Ready to continue building?</h3>
+                  </div>
+                  <p className="text-xs text-gray-400">Tell me what you'd like to add or modify, and I'll help you build it!</p>
+                </div>
+                
+                <div className="space-y-3">
+                  <textarea
+                    value={userPrompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        if (!userPrompt.trim() || streaming) return;
+                        
+                        const newMessage = {
+                          role: "user" as const,
+                          content: userPrompt,
+                        };
+
+                        setLlmMessages((x) => [...x, newMessage]);
+                        setPrompt("");
+                        handleStreamResponse([...llmMessages, newMessage]);
+                      }
+                    }}
+                    placeholder="Describe what you want to add or modify..."
+                    className="w-full p-3 bg-gray-900 text-gray-100 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none placeholder-gray-400 text-sm"
+                    rows={3}
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!userPrompt.trim()) return;
+
                       const newMessage = {
                         role: "user" as const,
                         content: userPrompt,
@@ -330,46 +394,26 @@ export function Builder() {
 
                       setLlmMessages((x) => [...x, newMessage]);
                       setPrompt("");
-                      handleStreamResponse([...llmMessages, newMessage]);
-                    }
-                  }}
-                  placeholder="Describe what you want to add or modify..."
-                  className="w-full p-3 bg-gray-900 text-gray-100 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none placeholder-gray-400 text-sm"
-                  rows={3}
-                />
-                <button
-                  onClick={async () => {
-                    if (!userPrompt.trim()) return;
-
-                    const newMessage = {
-                      role: "user" as const,
-                      content: userPrompt,
-                    };
-
-                    setLlmMessages((x) => [...x, newMessage]);
-                    setPrompt("");
-                    await handleStreamResponse([...llmMessages, newMessage]);
-                  }}
-                  disabled={!userPrompt.trim() || streaming}
-                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
-                >
-                  {streaming ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate Code"
-                  )}
-                </button>
+                      await handleStreamResponse([...llmMessages, newMessage]);
+                    }}
+                    disabled={!userPrompt.trim() || streaming}
+                    className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 text-sm flex items-center justify-center gap-2 shadow-lg"
+                  >
+                    {streaming ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Building magic...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-lg">✨</span>
+                        <span>Let's Build This!</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-
-          {(loading || !templateSet) && (
-            <div className="p-4">
-              <Loader />
-            </div>
+            </>
           )}
         </div>
       </div>

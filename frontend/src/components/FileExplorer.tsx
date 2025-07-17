@@ -80,18 +80,28 @@ export function FileExplorer({ files, onFileSelect }: FileExplorerProps) {
       <div className="px-4 py-3 border-b border-gray-700">
         <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
           <FolderTree className="w-4 h-4" />
-          Files
+          Project Files
         </h3>
       </div>
       <div className="flex-1 overflow-y-auto p-2">
-        {files.map((file, index) => (
-          <FileNode
-            key={`${file.path}-${index}`}
-            item={file}
-            depth={0}
-            onFileClick={onFileSelect}
-          />
-        ))}
+        {files.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-500 mb-3">
+              <span className="text-3xl">📁</span>
+            </div>
+            <p className="text-xs text-gray-400 mb-2">No files yet</p>
+            <p className="text-xs text-gray-500">Files will appear here as I build your project</p>
+          </div>
+        ) : (
+          files.map((file, index) => (
+            <FileNode
+              key={`${file.path}-${index}`}
+              item={file}
+              depth={0}
+              onFileClick={onFileSelect}
+            />
+          ))
+        )}
       </div>
     </div>
   );

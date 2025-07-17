@@ -47,19 +47,27 @@ export function CodeEditor({ file, streaming, streamingContent }: CodeEditorProp
 
     return (
       <div className="h-full bg-[#1e1e1e] flex flex-col">
-        <div className="bg-[#2d2d30] px-4 py-2 border-b border-gray-600 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-green-400 font-medium">
-              {extractedCode.fileName}
-            </span>
+        <div className="bg-[#2d2d30] px-4 py-3 border-b border-gray-600 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping opacity-20"></div>
+            </div>
+            <div>
+              <span className="text-sm text-green-400 font-medium">
+                {extractedCode.fileName}
+              </span>
+              <div className="text-xs text-gray-400">AI is building this for you...</div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-gray-400">Generating code...</div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-400">✨ Generating magic</span>
+            </div>
             <div className="flex gap-1">
               <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"></div>
-              <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-1 h-1 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
             </div>
           </div>
         </div>
@@ -93,14 +101,27 @@ export function CodeEditor({ file, streaming, streamingContent }: CodeEditorProp
   if (!file) {
     return (
       <div className="h-full flex items-center justify-center text-gray-400 bg-[#1e1e1e]">
-        <div className="text-center">
-          <div className="mb-4 text-gray-500">
-            <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-            </svg>
+        <div className="text-center max-w-md">
+          <div className="mb-6 text-gray-500">
+            <div className="relative">
+              <svg className="w-20 h-20 mx-auto text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+              </svg>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm">👨‍💻</span>
+              </div>
+            </div>
           </div>
-          <p className="text-lg font-medium text-gray-300 mb-2">No file selected</p>
-          <p className="text-sm text-gray-500">Choose a file from the explorer to view its contents</p>
+          <div className="space-y-3">
+            <h3 className="text-xl font-semibold text-gray-300">Ready to see some code?</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Select a file from the explorer on the left to view its contents, or ask me to generate new code!
+            </p>
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-600 mt-4">
+              <span>💡</span>
+              <span>Tip: I can help you build amazing features</span>
+            </div>
+          </div>
         </div>
       </div>
     );
